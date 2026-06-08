@@ -1,20 +1,27 @@
-# GreenSlothUtils
+# greensloth-utils
 
 This package includes all the commands needed to simplify the work on the GreenSloth Project.
 
 ## How to Create a model for GreenSloth (Using CLI)
 
-In thsi section you are getting a step-by-step guide on how the easiest way is to prepare a model for GreenSloth.
+In this section you are getting a step-by-step guide on how the easiest way is to prepare a model for GreenSloth.
 
 ## Installation
 
+This repository is packaged properly, yet not available on any package manager platforms. However, downloading this entire repository and adding it to your local environment as an editable pip installation is highly recommended and easy to do.
 
+For pixi, you add this to your `pyproject.toml` file, where you change the path to the according one:
+
+```bash
+[tool.pixi.pypi-dependencies]
+greensloth-utils = { path = "path/to/greensloth-utils", editable = true }
+```
 
 ### 0. All the commands
 
-Using `GreenSlothUtils` enables an easier way to contribute to GreenSloth. While there are many different functions and upsides this custom package gives, the most important ones are summarized in a CLI interface. These commands initializes your work for contributing a model to GreenSloth.
+Using `greensloth-utils` enables an easier way to contribute to GreenSloth. While there are many different functions and upsides this custom package gives, the most important ones are summarized in a CLI interface. These commands initializes your work for contributing a model to GreenSloth.
 
-Once you have the `GreenSlothUtils` package in your environment (we recommend using [`pixi`](https://pixi.sh/latest/)) you can enter the following in your Terminal. Any Terminal should work.
+Once you have the `greensloth-utils` package in your environment (we recommend using [`pixi`](https://pixi.sh/latest/)) you can enter the following in your Terminal. Any Terminal should work.
 
 ```bash
 GreenSloth-init --help
@@ -36,7 +43,7 @@ The option `-p=<path>`, is optional and lets you give the command a specific pat
 
 ### 2. Create your model using `MxlPy`
 
-This step is sadly not easily replaced by `GreenSlothUtils`. You will have to create your own working model and we recommend doing so with `MxlPy` if applicable. To see how to use that package please go its [docs](https://github.com/Computational-Biology-Aachen/MxlPy). Inside your newly created model directory, you will see the model directory, that contains several python-scripts. These scripts are there to guide you through the model-creating process and help you to keep a tidy representation fo your model.
+This step is sadly not easily replaced by `greensloth-utils`. You will have to create your own working model and we recommend doing so with `MxlPy` if applicable. To see how to use that package please go its [docs](https://github.com/Computational-Biology-Aachen/MxlPy). Inside your newly created model directory, you will see the model directory, that contains several python-scripts. These scripts are there to guide you through the model-creating process and help you to keep a tidy representation fo your model.
 
 The `__init__.py` file is the main file of your model. It collects all the other files and actually combines them to create your model, which should be using the name of the parent directory. The only things you should add to this file, are the variables and the parameters.
 
@@ -44,11 +51,11 @@ The `basic_funcs.py` file is empty, as it is a file for you to put common functi
 
 The `derived_quantities.py` and the `rates.py` file should include, as their appropriate names show, the derived quantitites and the rates of your model. Please include any addition to these files inside the function, which name's you should not change! These two functions are directly called by the `__init__.py` file to construct the rest of your model.
 
-At the end, you should be able to import the model folder and use the `<model_name>()` function (where you replace the `<model_name>` with the appropriate name) to constuct your entire model in any other python-script. This function is also in some of the commands used by `GreenSlothUtils` 
+At the end, you should be able to import the model folder and use the `<model_name>()` function (where you replace the `<model_name>` with the appropriate name) to constuct your entire model in any other python-script. This function is also in some of the commands used by `greensloth-utils` 
 
 ### 3. Extract Infromation from your Model
 
-To fascilitate the summary of your model, `GreenSlothUtils` includes a function that extracts common model information, like the variables, parameters, both their derived parts, and the rates. This information is inputted into seperated csv tables that follow the same format as the overall glossaries.
+To fascilitate the summary of your model, `greensloth-utils` includes a function that extracts common model information, like the variables, parameters, both their derived parts, and the rates. This information is inputted into seperated csv tables that follow the same format as the overall glossaries.
 
 ```bash
 Usage: GreenSloth-init from-model-to-gloss [OPTIONS]
@@ -138,7 +145,7 @@ Once you have updated your glossaries, you may need to change the variables used
 
 ### 7. Convert to Python variables
 
-As the summary of your model should be written in a markdown file, we need to write the markdown in a Python script. This allows us to use variables and functions to stay consistent in the entire file. One big adavantage is that we can store the math expression of all our model variables, parameters, and reactions inside seperate python variables. And `GreenSlothUtils` enables that automatically.
+As the summary of your model should be written in a markdown file, we need to write the markdown in a Python script. This allows us to use variables and functions to stay consistent in the entire file. One big adavantage is that we can store the math expression of all our model variables, parameters, and reactions inside seperate python variables. And `greensloth-utils` enables that automatically.
 
 ```bash
 Usage: GreenSloth-init python-from-gloss [OPTIONS]
@@ -167,7 +174,7 @@ The path to the directory you wish to store the python in a .txt file. Defaults 
 
 ### 8. Create Latex from Model
 
-In the summary of your model, you will also need to add the LaTex version of your reactions, derivedd equations, and ODE system. With `GreenSlothUtils` there is an easy way to do so. `mxlPy` has its own intern way to give you acces to LaTex version of your model, but as we are working with the prior created python variables and want some custom formatting, `GreenSlothUtils` uses its own methods.
+In the summary of your model, you will also need to add the LaTex version of your reactions, derivedd equations, and ODE system. With `greensloth-utils` there is an easy way to do so. `mxlPy` has its own intern way to give you acces to LaTex version of your model, but as we are working with the prior created python variables and want some custom formatting, `greensloth-utils` uses its own methods.
 
 ```bash
 Usage: GreenSloth-init latex-from-model [OPTIONS]
