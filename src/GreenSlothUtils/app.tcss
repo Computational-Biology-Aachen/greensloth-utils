@@ -1,0 +1,34 @@
+#start-page {
+    layout: grid;
+    grid-size: 2 2;
+    grid-gutter: 1 2;
+
+    Button {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+#button-stepguide {
+    column-span: 2;
+}
+
+#directory-label {
+    width: 1fr;
+}
+
+#button-modelcreate {
+    width: 1fr;
+}
+
+#input-modelname {
+    width: 1.5fr;
+
+    &.valid {
+        background: $success;
+    }
+
+    &.invalid {
+        background: $error;
+    }
+}
