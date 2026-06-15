@@ -1,3 +1,34 @@
+Screen {
+    align: center middle;
+}
+
+DataTable {
+    /* ... your existing table rules ... */
+    text-overflow: ellipsis; /* Appends ... to truncated cell text */
+}
+
+.head-row {
+    margin-bottom: 1;
+    text-style: bold;
+}
+
+.equal-width {
+    width: 1fr
+}
+
+.equal-height {
+    height: 1fr
+}
+
+.center-children {
+    align-horizontal: center;
+}
+
+.title-compare {
+    text-style: bold;
+    text-align: center
+}
+
 #start-page {
     layout: grid;
     grid-size: 2 2;
@@ -31,4 +62,38 @@
     &.invalid {
         background: $error;
     }
+}
+
+TabbedContent {
+    align-horizontal: center;
+}
+
+.has-data {
+    background: $error;
+}
+
+.has-no-data {
+    background: $success;
+}
+
+.low-text {
+    color: $text-disabled;
+}
+
+.hint-icon {
+    min-width: 3;
+    height: 1;
+    border: none;
+    background: transparent;
+    color: $text-muted;
+}
+
+.hint-icon:hover {
+    color: $accent; /* Lights up when they hover */
+}
+
+Tooltip {
+    background: $surface;
+    color: $text;
+    border: $accent;
 }

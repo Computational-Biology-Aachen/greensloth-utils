@@ -125,7 +125,7 @@ def write_python_from_gloss(
     update_txt_file(path_to_write=path_to_write, inp=inp)
 
 
-def export_glossselect_from_model(m: Model, gloss_path: Path, write_path: Path) -> None:
+def write_latex_from_model(m: Model, gloss_path: Path, write_path: Path) -> None:
     gloss = pd.read_csv(
         gloss_path,
         keep_default_na=False,
@@ -209,7 +209,7 @@ def export_glossselect_from_model(m: Model, gloss_path: Path, write_path: Path) 
     update_txt_file(path_to_write=write_path, inp=inp)
 
 
-def export_odes_as_latex(path_to_write: Path, m: Model, overwrite_flag: bool = False) -> None:
+def write_ode_from_model(path_to_write: Path, m: Model, overwrite_flag: bool = False) -> None:
     inp = ""
 
     stoics = m.get_stoichiometries()

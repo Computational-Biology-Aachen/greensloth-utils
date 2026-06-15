@@ -7,7 +7,7 @@ from mxlpy import Model
 import sys
 import pandas as pd
 
-from GreenSlothUtils import extract_select_to_gloss
+from GreenSlothUtils import extract_select_to_gloss, write_python_from_gloss, write_latex_from_model, write_ode_from_model
 
 def iterate_files(path_to_scan: Path, model_name: str, target_dir: Path, dirs = "") -> None:
 
@@ -184,3 +184,38 @@ def gs_compareinfos(
             res_dict[name] = (set(), set())
         
     return res_dict
+
+def gs_writepython(
+    model_dir: Path,
+) -> None:
+    
+    modelinfo_dir = model_dir / "model_info"
+    glosstopython_dir = modelinfo_dir / "python_written" / "gloss_to_python"
+    
+    for i in ["comps", "rates", "params", "derived_comps", "derived_params"]:
+        write_python_from_gloss(
+            path_to_write=glosstopython_dir / f'{i}.txt',
+            path_to_glass=modelinfo_dir / f'{i}.csv',
+            var_list_name=f'{i}_table'
+        )
+        
+def gs_writelatex(
+    model_dir: Path,
+) -> None:
+    
+    modelinfo_dir = model_dir / "model_info"
+    modeltolatex_dir = modelinfo_dir / "python_written" / "model_to_latex"
+    
+    model = get_model(
+        model_dir=model_dir,
+        model_name=model_dir.name
+    )
+    
+    for i in ["rates", "derived_comps", "derived_params"]:
+        write_latex_from_model(
+            m=model,
+            write_path=modeltolatex_dir / f"{i}.txt",
+            gloss_path=modelinfo_dir / f"{i}.csv",
+        )
+        
+    write_ode_from_model(m=model, path_to_write=modeltolatex_dir / "model_odes.txt")

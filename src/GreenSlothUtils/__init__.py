@@ -2,8 +2,8 @@ __all__ = [
     "extract_select_to_gloss",
     "check_gloss_to_model",
     "write_python_from_gloss",
-    "export_odes_as_latex",
-    "export_glossselect_from_model",
+    "write_ode_from_model",
+    "write_latex_from_model",
     "remove_math",
     "gloss_fromCSV",
     "update_from_main_gloss",
@@ -11,11 +11,11 @@ __all__ = [
 
 from .utils import (
     check_gloss_to_model,
-    export_glossselect_from_model,
-    export_odes_as_latex,
+    write_ode_from_model,
     extract_select_to_gloss,
     gloss_fromCSV,
     remove_math,
     update_from_main_gloss,
+    write_latex_from_model,
     write_python_from_gloss,
 )

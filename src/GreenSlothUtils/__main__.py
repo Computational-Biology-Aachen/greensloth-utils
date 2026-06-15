@@ -1,5 +1,7 @@
 from collections.abc import Iterable
 from pathlib import Path
+from itertools import zip_longest
+import pyclip
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -8,6 +10,8 @@ from textual.containers import (
     HorizontalGroup,
     Vertical,
     VerticalScroll,
+    VerticalGroup,
+    CenterMiddle
 )
 from textual.validation import Regex
 from textual.widgets import (
@@ -19,15 +23,25 @@ from textual.widgets import (
     Header,
     Input,
     Label,
-    DataTable
+    DataTable,
+    TabbedContent,
+    TabPane,
+    TextArea
 )
 
 from GreenSlothUtils import installerfuncs
-
+    
 
 def reset_button(button: Button, label: str, color: str) -> None:
     button.label = label
     button.variant = color
+
+def press_button(self, button: Button, new_label: str) -> None:
+    button.variant = "success"
+    old_label = str(button.label)
+    button.label = new_label
+
+    self.set_timer(3, lambda: reset_button(button, old_label, "default"))
 
 class ModelPathSelection(DirectoryTree):
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
@@ -78,46 +92,70 @@ class GreenSlothInitialize(App):
                 )
                 yield ModelPathSelection("./", id="directory-editmodel")
                 
-            with Vertical(id="editmodel-functions-page"):
-                yield Label("Model Name", id="label-editmodel-name")
+            with Vertical(id="editmodel-functions-page", classes="center-text"):
+                yield CenterMiddle(Label("Model Name", id="label-editmodel-name"), classes="head-row")
                 with ContentSwitcher(initial="editmodel-functions-buttons", id="content-editmodel-functions"):
                     with Vertical(id="editmodel-functions-buttons"):
-                        yield HorizontalGroup(
-                            Label("Extract Information from Model"),
-                            Button("Extract", id="button-editmodel-modelinfo", variant="default")
-                        )
-                        yield HorizontalGroup(
-                            Label("Compare Information with Model"),
-                            Button("Compare", id="button-editmodel-compareinfo", variant="default")
-                        )
-                        yield HorizontalGroup(
-                            Label("Update Information from Main Glossaries"),
-                            Button("Update", id="button-editmodel-glossary", variant="default")
-                        )
-                        yield HorizontalGroup(
-                            Label("Convert to Python"),
-                            Button("Convert", id="button-editmodel-convertpython", variant="default")
-                        )
-                        yield HorizontalGroup(
-                            Label("Convert to LaTeX"),
-                            Button("Convert", id="button-editmodel-convertlatex", variant="default")
-                        )
+                        yield Button("Extract Information from Model", id="button-editmodel-extraction", variant="default", classes="equal-width")
+                        yield Button("Update Information from Main Glossaries", id="button-editmodel-glossary", variant="default", classes="equal-width")
+                        yield Button("Convert to Python", id="button-editmodel-convertpython", variant="default", classes="equal-width")
+                        yield Button("Convert to LaTeX", id="button-editmodel-convertlatex", variant="default", classes="equal-width")
+                        
                     with Vertical(id="editmodel-functions-compare"):
                         yield HorizontalGroup(
-                            Button("Back", id="button-editmodel-compare-back"),
-                            Button("Extract and Compare", id="button-editmodel-compareagain", variant="default")
+                            Button("Back", id="button-editmodel-compare-back", classes="equal-width"),
+                            Button("Extract and Compare", id="button-editmodel-compareagain", variant="default", classes="equal-width"),
+                            classes="head-row"
                         )
-                        yield HorizontalGroup(
-                            VerticalScroll(
-                                Label("Variables", classes="title-compare"),
-                                DataTable(id="datatable-variables")
-                            ),
-                            VerticalScroll(
-                                Label("Parameters", classes="title-compare"),
-                                DataTable(id="datatable-parameters")
-                            )
+                        
+                        with HorizontalGroup():
+                            yield Label("Double-Click a cell to copy its value!", classes="low-text")
+                            yield Button("?", id="button-editmodel-comparehelp", classes="hint-icon", tooltip="This shows the difference between the csv tables extracted from the model and the ones you have to fill. It only shows the Python Vars.")
+                        with TabbedContent(initial="tab-variables"):
+                            with TabPane("Variables", id="tab-variables", classes="has-no-data"):
+                                yield DataTable(id="datatable-variables")
+                            with TabPane("Rates", id="tab-rates", classes="has-no-data"):
+                                yield DataTable(id="datatable-rates")
+                            with TabPane("Parameters", id="tab-parameters", classes="has-no-data"):
+                                yield DataTable(id="datatable-parameters")
+                            with TabPane("Derived Variables", id="tab-derivedvars", classes="has-no-data"):
+                                yield DataTable(id="datatable-derivedvars")
+                            with TabPane("Derived Parameters", id="tab-derivedparams", classes="has-no-data"):
+                                yield DataTable(id="datatable-derivedparams")
+                
+            with Vertical(id="stepbystep-createmodel-page"):
+                yield CenterMiddle(Label("Step-by-Step"), classes="head-row")
+                yield HorizontalGroup(
+                            Button("Previous Step", id="button-stepguide-prev", classes="equal-width"),
+                            Button("Next Step", id="button-stepguide-next", classes="equal-width")
                         )
-
+                with ContentSwitcher(initial="step0", id="content-stepbystep"):
+                    with Vertical(id="step0", classes="center-children"):
+                        yield Label("Step 0: What is this?")
+                        yield TextArea(
+                            """To create a model for GreenSloth, this step-by-step guide can help with making it ready for deployment. This step-by-step guide only consists of 8 steps, however, they each differ dramatically in complexity and effort. If you cannot finish the steps in one sitting, do not worry, as you can always go back to where you were by just clicking the next step button. At the end of these steps, you will have a model in mxlpy that has similar nomenclature and format as the other models in the database. Additionally, your model will have a script to create a well-formed documentation for your model. One that can also be suplied to publications.
+                            
+                            Once you are ready, you can begin, by pressign the Next Step button.
+                            """,
+                            read_only=True
+                        )
+                    with Vertical(id="step1", classes="center-children"):
+                        yield Label("Step 1: Create Model Directory")
+                    with Vertical(id="step2", classes="center-children"):
+                        yield Label("Step 2: Create Model using MxLpy")
+                    with Vertical(id="step3", classes="center-children"):
+                        yield Label("Step 3: Extract Model Information")
+                    with Vertical(id="step4", classes="center-children"):
+                        yield Label("Step 4: Correct Model Information")
+                    with Vertical(id="step5", classes="center-children"):
+                        yield Label("Step 5: Update Info from Main Glossaries")
+                    with Vertical(id="step6", classes="center-children"):
+                        yield Label("Step 6: Correct Model Information again")
+                    with Vertical(id="step7", classes="center-children"):
+                        yield Label("Step 7: Extract Model Information for README")
+                    with Vertical(id="step8", classes="center-children"):
+                        yield Label("Step 8: Finish up README")
+                            
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
@@ -143,6 +181,11 @@ class GreenSlothInitialize(App):
     def switch_to_editmodel_select(self) -> None:
         switcher = self.query_one("#content-mains", ContentSwitcher)
         switcher.current = "editmodel-select-page"
+        
+    @on(Button.Pressed, "#button-stepguide")
+    def switch_to_stepbystep_select(self) -> None:
+        switcher = self.query_one("#content-mains", ContentSwitcher)
+        switcher.current = "stepbystep-createmodel-page"
     
     @on(Button.Pressed, "#button-modelcreate")
     def create_model(self) -> None:
@@ -179,8 +222,8 @@ class GreenSlothInitialize(App):
         
         switcher.current = "editmodel-functions-page"
         
-    @on(Button.Pressed, "#button-editmodel-modelinfo")
-    def extract_model_info(self) -> None:
+    @on(Button.Pressed, "#button-editmodel-extraction")
+    def extract_model_info(self, keep_button: bool = False) -> None:
         
         model_path = self.app.selected_model_path
         model_name = self.app.selected_model_path.name
@@ -190,39 +233,42 @@ class GreenSlothInitialize(App):
             model_name=model_name
         )
         
-        button = self.query_one("#button-editmodel-modelinfo", Button)
-        button.variant = "success"
-        button.label = "Extracted!"
-        
-        self.set_timer(3, lambda: reset_button(button, "Extract", "default"))
-        
-    @on(Button.Pressed, "#button-editmodel-compareinfo")
-    def compare_model_info(self) -> None:
-        switcher = self.query_one("#content-editmodel-functions", ContentSwitcher)
-        switcher.current = "editmodel-functions-compare"
-        
         compare_dict = installerfuncs.gs_compareinfos(
             model_dir=self.app.selected_model_path
         )
         
-        table = self.query_one(f"#datatable-variables", DataTable)
-        table.add_columns("Model", "Glossary")
-        
-        if len(compare_dict["variables"][0]) != 0 or len(compare_dict["variables"][1]) != 0:
-            for var in compare_dict["variables"][0]:
-                table.add_row(var, "")
-            for var in compare_dict["variables"][1]:
-                table.add_row("", var)
-
-        # for name, (checked_model, checked_gloss) in compare_dict.items():
-        #     table = self.query_one(f"#datatable-{name}", DataTable)
-        #     table.add_columns("Model", "Glossary")
+        for name, (checked_model, checked_gloss) in compare_dict.items():
+            # Bulletproof way to find the generated Tab without guessing prefixes
+            tab_widget = None
+            for tab in self.query("Tab"):  # Ask Textual for all Tab widgets
+                if tab.id and tab.id.endswith(name):
+                    tab_widget = tab
+                    break
             
-        #     if len(checked_model) != 0 or len(checked_gloss) != 0:
-        #         for var in checked_model:
-        #             table.add_row(var, "")
-        #         for var in checked_gloss:
-        #             table.add_row("", var)
+            table = self.query_one(f"#datatable-{name}", DataTable)
+            table.clear(columns=True)
+        
+            for column_header in ["Model", "Glossary"]:
+                table.add_column(column_header)
+        
+            if len(checked_model) != 0 or len(checked_gloss) != 0:
+                tab_widget.remove_class("has-no-data")
+                tab_widget.add_class("has-data")
+                for model_val, gloss_val in zip_longest(checked_model, checked_gloss, fillvalue=""):
+                    table.add_row(model_val, gloss_val)
+                    
+            else:
+                tab_widget.remove_class("has-data")
+                tab_widget.add_class("has-no-data")
+                
+        switcher = self.query_one("#content-editmodel-functions", ContentSwitcher)
+        switcher.current = "editmodel-functions-compare"
+        
+        press_button(
+            self,
+            self.query_one("#button-editmodel-compareagain", Button),
+            "Extracted!",
+        )
 
     @on(Button.Pressed, "#button-editmodel-compare-back")
     def goback_editmodel_functions(self) -> None:
@@ -231,7 +277,49 @@ class GreenSlothInitialize(App):
         
     @on(Button.Pressed, "#button-editmodel-compareagain")
     def compare_again(self) -> None:
-        self.compare_model_info()
+        self.extract_model_info()
+        
+    @on(Button.Pressed, "#button-editmodel-convertpython")
+    def convert_to_python(self) -> None:
+        installerfuncs.gs_writepython(
+            model_dir=self.app.selected_model_path
+        )
+        
+        press_button(
+            self,
+            self.query_one("#button-editmodel-convertpython", Button),
+            "Converted!",
+        )
+        
+    @on(Button.Pressed, "#button-editmodel-convertlatex")
+    def convert_to_latex(self) -> None:
+        installerfuncs.gs_writelatex(
+            model_dir=self.app.selected_model_path
+        )
+        
+        press_button(
+            self,
+            self.query_one("#button-editmodel-convertlatex", Button),
+            "Converted!",
+        )
+        
+    @on(Button.Pressed, "#button-stepguide-prev")
+    def stepguide_prev(self) -> None:
+        switcher = self.query_one("#content-stepbystep", ContentSwitcher)
+        page_ids = [page.id for page in switcher.children]
+        switcher_idx = page_ids.index(switcher.current)
+        
+        if switcher_idx > 0:
+            switcher.current = page_ids[switcher_idx - 1]
+            
+    @on(Button.Pressed, "#button-stepguide-next")
+    def stepguide_next(self) -> None:
+        switcher = self.query_one("#content-stepbystep", ContentSwitcher)
+        page_ids = [page.id for page in switcher.children]
+        switcher_idx = page_ids.index(switcher.current)
+        
+        if switcher_idx < len(page_ids) - 1:
+            switcher.current = page_ids[switcher_idx + 1]
 
     ### Input Events
     
@@ -262,18 +350,34 @@ class GreenSlothInitialize(App):
     @on(DirectoryTree.DirectorySelected, "#directory-editmodel")
     def edit_model_directory_select(self, event: DirectoryTree.DirectorySelected) -> None:
         """Update the directory label with the selected path."""
-        
+
         selected_dir = event.path
         select_button = self.query_one("#button-modelselect", Button)
-        
+
         self.query_one("#label-directoryselect", Label).update(str(selected_dir) + "/")
-        
+
         if Path.exists(selected_dir / "model_info"):
             select_button.variant = "success"
             select_button.disabled = False
         else:
             select_button.variant = "default"
             select_button.disabled = True
+            
+    ### DataTable Events
+    
+    @on(DataTable.CellSelected)
+    def copy_cell_to_clipboard(self, event: DataTable.CellSelected) -> None:
+        """Fires when a cell is clicked or selected with Enter."""
+        
+        cell_value = str(event.value)
+        
+        if not cell_value.strip():
+            return
+        
+        pyclip.copy(cell_value)
+        
+        self.notify(f"Copied to clipboard: '{cell_value}'", title="Clipboard", severity="information")
+        
 
 if __name__ == "__main__":
     app = GreenSlothInitialize()
