@@ -496,7 +496,7 @@ packages:
 - pypi: .
   name: greenslothutils
   version: 0.0.1
-  sha256: 380b61ad7bce396a9c44ab6691f5bcb117d87b59f0e6c6f7f5e7547fec075b59
+  sha256: e17c8271e495707aab5e38b183c5654c83b47aecb244b7193555d577b4b152a8
   requires_dist:
   - mdutils>=1.6.0,<2
   - validators
@@ -508,7 +508,7 @@ packages:
   - textual>=8.2.7,<9
   - textual-dev>=1.8.0,<2
   - watchdog>=6.0.0,<7
-  - pyclip
+  - pyclip>=0.7.0,<0.8
   requires_python: '>=3.12'
   editable: true
 - pypi: https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl

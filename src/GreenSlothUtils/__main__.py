@@ -39,13 +39,146 @@ def reset_button(button: Button, label: str, color: str) -> None:
 def press_button(self, button: Button, new_label: str) -> None:
     button.variant = "success"
     old_label = str(button.label)
+    old_color = button.variant
     button.label = new_label
 
-    self.set_timer(3, lambda: reset_button(button, old_label, "default"))
+    self.set_timer(3, lambda: reset_button(button, old_label, old_color))
 
 class ModelPathSelection(DirectoryTree):
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
         return [path for path in paths if not path.name.startswith(".")]
+    
+class ModelCreationView(Vertical):
+    """A self-contained widget for creating a model."""
+    
+    def __init__(self, is_guide_mode: bool = False, *args, **kwargs):
+        # Pass standard arguments (like 'id' or 'classes') up to the parent Vertical container
+        super().__init__(*args, **kwargs)
+        
+        # Save our custom flag so the rest of the class can see it
+        self.is_guide_mode = is_guide_mode
+
+    def compose(self) -> ComposeResult:
+        # Note: You don't need highly specific IDs anymore if this widget 
+        # manages its own events, but you can keep them if you prefer.
+        yield HorizontalGroup(
+            Button("Up Dir", id="button-create-updir", variant="primary"),
+            Label("Please select a directory", id="directory-label"),
+            Input(
+                placeholder="Enter Model Name...",
+                validators=[Regex(r"^[A-Z][a-zA-Z]*[0-9]{4}$")],
+                restrict=r"[a-zA-Z0-9]*",
+                id="input-modelname"
+            ),
+            Button("Create", id="button-modelcreate", disabled=True),
+        )
+        yield ModelPathSelection(Path("./").resolve(), id="create-model-directory")
+        
+    def reset_view(self) -> None:
+        """Resets all child widgets to their initial default state."""
+        # 1. Reset the text input and its validation styling
+        name_input = self.query_one("#input-modelname", Input)
+        name_input.value = ""
+        name_input.remove_class("valid", "invalid")
+        
+        # 2. Reset the directory tree to the absolute current path
+        tree = self.query_one("#create-model-directory", ModelPathSelection)
+        default_path = Path("./").resolve()
+        tree.path = default_path
+        
+        # 3. Reset the directory label
+        label = self.query_one("#directory-label", Label)
+        label.update(f"Please select a Model Path")
+        
+        # 4. Reset the create button to disabled/default
+        create_button = self.query_one("#button-modelcreate", Button)
+        create_button.label = "Create"
+        create_button.variant = "default"
+        create_button.disabled = True
+        create_button.remove_class("confirm-flag")
+        
+    @on(Button.Pressed, "#button-create-updir")
+    def navigate_up_create_tree(self) -> None:
+        tree = self.query_one("#create-model-directory", ModelPathSelection)
+        label = self.query_one("#directory-label", Label)
+        
+        # Step back to the parent directory
+        new_path = tree.path.resolve().parent
+        tree.path = new_path
+        
+        # Update the UI label to reflect the new root
+        label.update(f"{new_path}/")
+        
+    @on(Button.Pressed, "#button-modelcreate")
+    def create_model(self) -> None:
+        model_name = self.query_one("#input-modelname", Input).value
+        model_path = Path(self.query_one("#directory-label", Label).content)
+        create_button = self.query_one("#button-modelcreate", Button)
+        directory_tree = self.query_one("#create-model-directory", ModelPathSelection)
+        
+        if create_button.has_class("confirm-flag"):
+            # Update the main App's selected model state
+            self.app.selected_model_path = model_path
+            
+            if self.is_guide_mode:
+                # ---> Guide Behavior <---
+                # Advance the step-by-step switcher directly to Step 2
+                step_switcher = self.app.query_one("#content-stepbystep", ContentSwitcher)
+                step_switcher.current = "step2"
+            else:
+                # ---> Main Menu Behavior <---
+                # Update the edit page label and switch the main view
+                self.app.query_one("#label-editmodel-name", Label).update(model_path.name)
+                self.app.query_one("#content-mains", ContentSwitcher).current = "editmodel-functions-page"
+            
+            return
+        
+        # Add logic to create the model
+        if not Path.is_dir(model_path):
+            # Handle the case where the selected path is not a directory
+            create_button.variant = "error"
+            create_button.label = "Invalid Directory"
+        elif Path.exists(model_path / model_name):
+            create_button.variant = "error"
+            create_button.label = "Model Already Exists"
+        elif Path.exists(model_path / "model_info"):
+            create_button.variant = "warning"
+            create_button.label = "Select this model instead?"
+            create_button.add_class("confirm-flag")
+        else:
+            installerfuncs.gs_install(model_name, Path(model_path))
+            press_button(self, create_button, "Created!")
+            directory_tree.reload()
+            
+    @on(DirectoryTree.DirectorySelected, "#create-model-directory")
+    def update_create_model_directory_label(self, event: DirectoryTree.DirectorySelected) -> None:
+        """Update the directory label with the selected path."""
+        selected_dir = event.path
+        self.query_one("#directory-label", Label).update(str(selected_dir) + "/")
+        create_button = self.query_one("#button-modelcreate", Button)
+        
+        if Path.exists(selected_dir / "model_info"):
+            create_button.disabled = False
+            create_button.variant = "warning"
+            create_button.label = "Select this model instead?"
+            create_button.add_class("confirm-flag")
+        else:
+            create_button.disabled = True
+        
+    @on(Input.Changed, "#input-modelname")
+    def check_modelname(self) -> None:
+        input_modelname = self.query_one("#input-modelname", Input)
+        create_button = self.query_one("#button-modelcreate", Button)
+        
+        if input_modelname.is_valid:
+            input_modelname.add_class("valid")
+            input_modelname.remove_class("invalid")
+            create_button.disabled = False
+        else:
+            input_modelname.add_class("invalid")
+            input_modelname.remove_class("valid")
+            create_button.disabled = True
+    
 class GreenSlothInitialize(App):
     """A Textual app fascilitate the model initialization process of GreenSloth"""
     
@@ -71,19 +204,7 @@ class GreenSlothInitialize(App):
                 yield Button("Edit Existing Model", id="button-switchpage-editmodel")
                 yield Button("Step-By-Step Guide", id="button-stepguide")
                 
-            with Vertical(id="create-model-page"):
-                yield HorizontalGroup(
-                    Label("Please select a directory", id="directory-label"),
-                    Input(
-                        placeholder="Enter Model Name. Must be like Corvest2000",
-                        validators=[Regex(r"^[A-Z][a-zA-Z]*[0-9]{4}$")],
-                        restrict=r"[a-zA-Z0-9]*",
-                        id="input-modelname"
-                    ),
-                    Button("Create", id="button-modelcreate", variant="default", disabled=True),
-                    id="create-model-firstrow"
-                )
-                yield ModelPathSelection("./", id="create-model-directory")
+            yield ModelCreationView(id="create-model-page")
                 
             with Vertical(id="editmodel-select-page"):
                 yield HorizontalGroup(
@@ -141,6 +262,7 @@ class GreenSlothInitialize(App):
                         )
                     with Vertical(id="step1", classes="center-children"):
                         yield Label("Step 1: Create Model Directory")
+                        yield ModelCreationView(is_guide_mode=True, id="create-model-page-guide")
                     with Vertical(id="step2", classes="center-children"):
                         yield Label("Step 2: Create Model using MxLpy")
                     with Vertical(id="step3", classes="center-children"):
@@ -171,9 +293,14 @@ class GreenSlothInitialize(App):
         switcher.current = "start-page"
 
     #### Buttons
-    
+        
     @on(Button.Pressed, "#button-switchpage-createmodel")
     def switch_to_create_model(self) -> None:
+        # 1. Find the view instance and reset it
+        create_view = self.query_one("#create-model-page", ModelCreationView)
+        create_view.reset_view()
+        
+        # 2. Make the switch
         switcher = self.query_one("#content-mains", ContentSwitcher)
         switcher.current = "create-model-page"
 
@@ -186,30 +313,6 @@ class GreenSlothInitialize(App):
     def switch_to_stepbystep_select(self) -> None:
         switcher = self.query_one("#content-mains", ContentSwitcher)
         switcher.current = "stepbystep-createmodel-page"
-    
-    @on(Button.Pressed, "#button-modelcreate")
-    def create_model(self) -> None:
-        model_name = self.query_one("#input-modelname", Input).value
-        model_path = Path(self.query_one("#directory-label", Label).content)
-        create_button = self.query_one("#button-modelcreate", Button)
-        directory_tree = self.query_one("#create-model-directory", ModelPathSelection)
-        
-        # Add logic to create the model
-        if not Path.is_dir(model_path):
-            # Handle the case where the selected path is not a directory
-            create_button.variant = "error"
-            create_button.label = "Invalid Directory"
-        elif Path.exists(model_path / model_name):
-            create_button.variant = "error"
-            create_button.label = "Model Already Exists"
-        elif Path.exists(model_path / "model_info"):
-            create_button.variant = "error"
-            create_button.label = "Selected Directory Already a Model"
-        else:
-            create_button.variant = "success"
-            create_button.label = "Create"
-            installerfuncs.gs_install(model_name, Path(model_path))
-            directory_tree.reload()
             
     @on(Button.Pressed, "#button-modelselect")
     def switch_to_editmodel_funcs(self) -> None:
@@ -305,6 +408,9 @@ class GreenSlothInitialize(App):
         
     @on(Button.Pressed, "#button-stepguide-prev")
     def stepguide_prev(self) -> None:
+        create_view = self.query_one("#create-model-page-guide", ModelCreationView)
+        create_view.reset_view()
+        
         switcher = self.query_one("#content-stepbystep", ContentSwitcher)
         page_ids = [page.id for page in switcher.children]
         switcher_idx = page_ids.index(switcher.current)
@@ -314,6 +420,9 @@ class GreenSlothInitialize(App):
             
     @on(Button.Pressed, "#button-stepguide-next")
     def stepguide_next(self) -> None:
+        create_view = self.query_one("#create-model-page-guide", ModelCreationView)
+        create_view.reset_view()
+        
         switcher = self.query_one("#content-stepbystep", ContentSwitcher)
         page_ids = [page.id for page in switcher.children]
         switcher_idx = page_ids.index(switcher.current)
@@ -323,29 +432,9 @@ class GreenSlothInitialize(App):
 
     ### Input Events
     
-    @on(Input.Changed, "#input-modelname")
-    def check_modelname(self) -> None:
-        input_modelname = self.query_one("#input-modelname", Input)
-        create_button = self.query_one("#button-modelcreate", Button)
-        create_button.label = "Create"
-        if input_modelname.is_valid:
-            input_modelname.add_class("valid")
-            input_modelname.remove_class("invalid")
-            create_button.disabled = False
-            create_button.variant = "success"
-        else:
-            input_modelname.add_class("invalid")
-            input_modelname.remove_class("valid")
-            create_button.disabled = True
-            create_button.variant = "default"
+    
 
     ### Directory Tree Events
-    
-    @on(DirectoryTree.DirectorySelected, "#create-model-directory")
-    def update_create_model_directory_label(self, event: DirectoryTree.DirectorySelected) -> None:
-        """Update the directory label with the selected path."""
-        selected_dir = event.path
-        self.query_one("#directory-label", Label).update(str(selected_dir) + "/")
     
     @on(DirectoryTree.DirectorySelected, "#directory-editmodel")
     def edit_model_directory_select(self, event: DirectoryTree.DirectorySelected) -> None:
